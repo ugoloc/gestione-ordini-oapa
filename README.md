@@ -1,9 +1,13 @@
 # gestione-ordini-oapa
 
 @author: Ugo Lo Cicero
+
 @version: 1.0
+
 @date: 2022 (first release: 2015)
+
 @coding: Python
+
 @summary: Questo software, basato su framework Django, è stato sviluppato per la gestione delle procedure di acquisto di INAF-Osservatorio Astronomico di Palermo, soddisfacendo l'esigenza di digitalizzare un processo multistep che richiede una sequenza di autorizzazioni e "firme". L'interfaccia utente è una web-app accessibile remotamente con autenticazione. Utilizza un database per raccogliere le informazioni sugli utenti abilitati e sulle procedure in atto e concluse. Ogni procedura consiste in una sequenza di sezioni, costituite da form, che possono essere compilate esclusivamente dai responsabili assegnati. E' possibile inserire allegati in ciascuna sezione. Le sezioni possono essere salvate per essere completate successivamente. Quando una sezione viene finalizzata (chiusa), il software invia una notifica email ai responsabili della successiva sezione aperta. Le sezioni possono essere chiuse in ordine sparso secondo esigenza, sebbene la sequenza rifletta il flusso ordinario di lavorazione. Una sezione chiusa può essere riaperta dal responsabile della sezione successiva. Le sezioni di una procedura vengono visualizzate in sequenza in una singola pagina web, con un menu di navigazione laterale che consente di avere una panoramica dello stato di chiusura delle sezioni e di saltare ad una sezione specifica. La struttura del software è flessibile, per consentire facili variazioni al flusso della procedura, alle sezioni e ai campi presenti nelle sezioni. In caso di aggiornamento del flusso di procedura viene assegnata una nuova versione e viene mantenuto il supporto a ordini ancora aperti con versione di procedura precedente. Determinati campi o intere sezioni possono essere mostrate o meno in funzione di valori selezionati in sezioni precedenti, in modo da consentire flussi alternativi, o l'inserimento di informazioni diverse, per differenti casistiche (es. gare piuttosto che affidamento diretto, oppure ordine tramite MEPA o meno). Il software è stato adottato stabilmente dalla struttura OAPA a partire da giugno 2015.
 
 @features:
