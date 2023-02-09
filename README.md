@@ -2,9 +2,9 @@
 
 @author: Ugo Lo Cicero
 
-@version: 1.0
+@version: 1.0 (stable)
 
-@date: 2022 (first release: 2015)
+@date: 2022 (first release: 2014)
 
 @coding: Python
 
