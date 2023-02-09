@@ -1,0 +1,322 @@
+{% extends "ordini/base.html" %}
+{% block content %}
+	{% load add_attr %}
+	{% load spacify %}
+	<style>
+		[disabled],[readonly] { /* Style of disabled elements: Text and background colour, medium red on light yellow */
+			color:#933;
+			background-color:#ffc;
+		}
+	</style>
+	
+	<script>
+	function conditional_elements(){	
+	// set the visibility of conditional elements comparing their conditions against conditioning elements (cond_elem) value
+		$(".conditional").each(function() {
+			var cond_elem = $(this).data('cond_elem');
+			var condition = $(this).data('condition');
+			var cond_len = cond_elem.length;
+			var show = false;
+			for (var i = 0; i < cond_len; i++) {
+				//trig_val = $('#id_' + cond_elem[i]).prop('checked') || ($('#id_' + cond_elem[i]).val() == 2); // True if checkbox checked or if three state select = 2 (1=unknown, 2=yes, 3=no)
+				var curr_cond_elem = $("[name=" + cond_elem[i]+"]" );
+				//trig_val = $("[name=" + cond_elem[i]+"]" ).prop('checked')|| ($("[name=" + cond_elem[i]+"]").val() == 2); // True if checkbox checked or if three state select = 2 (1=unknown, 2=yes, 3=no)
+				if (curr_cond_elem.hasClass('checkbox')){
+					trig_val = curr_cond_elem.prop('checked')|| (curr_cond_elem.val() == 2); // True if checkbox checked or if three state select = 2 (1=unknown, 2=yes, 3=no)
+					if (trig_val == condition[i]){show = true;}
+				} else {
+					trig_val = curr_cond_elem.val().trim();
+					if (trig_val == condition){show = true;}
+				}	
+				if (show){
+					$(this).show();
+					$(this).parent().parent().find("label[for=" + $(this).attr('id') + "]").show();		//this syntax allow to select the conditional element label only in its same section
+				} else{
+					$(this).hide();
+					$(this).parent().parent().find("label[for=" + $(this).attr('id') + "]").hide();
+					break;
+				}
+			}
+		});
+	}
+	
+	$(document).ready(function() {	
+		// add classes to some form elements
+		$('.module').find(':text, :input[type="number"], select').addClass('textbox');
+		$('.module').find('button, :input[type="submit"]').addClass('button');		
+		$('.module').find(':input[type="checkbox"]').closest('div').addClass('squaredOne');		
+		
+		conditional_elements();
+		$('.trigger').on('change', function(e){
+			conditional_elements();
+		});
+	
+		$( ".datepicker" ).datepicker({ changeYear: true, changeMonth: true, dateFormat: 'dd/mm/yy' });
+		//$(".datepicker").on('click',function(){
+		//	$(this).datepicker().datepicker( "show" );
+		//});    
+		
+		
+		{% if followed %}
+			$('#unfollow').show();
+			$('#follow').hide();
+		{% else %}
+			$('#unfollow').hide();
+			$('#follow').show();
+		{% endif %}
+		
+		$('#follow').on('click', function(e){
+			e.preventDefault();
+			$.ajax({
+				type: "GET",
+				url: "{% url 'gestione_ordini:follow' order_id=order.id %}",
+				success: function(data) {
+					$('#follow').hide();
+					$('#unfollow').show();
+					alert('Attivata la notifica per ogni modifica di questo ordine.');
+				},
+			});
+		});
+		
+		$('#unfollow').on('click', function(e){
+			e.preventDefault();
+			$.ajax({
+				type: "GET",
+				url: "{% url 'gestione_ordini:unfollow' order_id=order.id %}",
+				success: function(data) {
+					$('#unfollow').hide();
+					$('#follow').show();
+					alert('Disattivata la notifica per ogni modifica di questo ordine.');
+				},
+			});
+		});
+		
+		$("#deletebutton").on('click', function(e){
+			if(!confirm("Eliminare l'ordine? \nL'OPERAZIONE NON E' REVERSIBILE!")){		// prompt confirm message
+				e.preventDefault();						// if NO default action (delete link) is not executed
+			}
+		});
+		
+		$("#cancelbutton").on('click', function(e){
+			if(!confirm("Impostare l'ordine come Annullato?")){		// prompt confirm message
+				e.preventDefault();						// if NO default action (cancel link) is not executed
+			}
+		});
+			
+		if ($('#error_message').length) {
+			alert( '{{error_message}}' );
+		}
+			
+		$('.nwlink').on('click', function(e){			// new window link
+			e.preventDefault();
+			window.open($(this).data('url'));
+		});
+		
+		
+		$('.infolink').on('click', function(e){			// info link (get data and show alert)
+			e.preventDefault();
+			$.ajax({
+				type: "GET",
+				url: $(this).data('url'),
+				success: function(data) {alert(data);},
+			});
+		});
+		
+		$('.addfile').on('click', function(e){
+			return confirm("Procedendo si perderanno le modifiche non salvate in questa sezione. Per non perdere dati inseriti salvare la sezione prima di procedere con l'aggiunta di allegati. \nContinuare?");
+		});
+		
+		
+		$('.deletefile').on('click', function(e){
+			 return confirm("Eliminare il file?");
+		});
+				
+		
+		$('.close_section').on('click', function(e){			// class close_section is assigned by html code
+			e.preventDefault();
+			var message = "Chiudere la sezione?";
+			var attachOk = "True";
+			if ($(this).hasClass('close_order')){
+				message = "Chiudere l'ordine?";
+			}
+			if(confirm(message)){
+				frm = $(this).closest('form');
+				if (frm.hasClass('attachReq')){		// attachment verification
+					$.ajax({
+						type: "GET",
+						async: false,									// execution is halted until ajax call is finished
+						cache: false,									// don't load from cache
+						url: "verifyAttachment"+"/"+frm.attr('id'),		// check if there is an attachment
+						success: function(data) {attachOk = data},
+					});
+					if (attachOk == "False"){
+						if(confirm("Procedere senza allegati?")){
+							attachOk = "True";
+						}
+					}
+				}
+				if (attachOk == "True"){
+					frm.find('.section_closed').val('True');
+					frm.find('.order_closed').val('True');
+					$.ajax({
+						type: frm.attr('method'),
+						async: false,									// execution is halted until ajax call is finished
+						url: frm.attr('action'),
+						data: frm.serialize(),
+						success: function (data) {alert(data);}
+					});
+					location.replace('?' + Math.random() +'#'+ frm.attr('id'));		// refresh page returning to current section (random avoid caching)
+				} 
+			}
+		});
+		
+		
+		$('.reopen_section').on('click', function(e){
+			e.preventDefault();
+			if(confirm("Riaprire la sezione precedente?")){
+				frm = $(this).closest('form');
+				frm.append("<input type='hidden' name='reopen_section' value=True /> ");
+				$.ajax({
+					type: frm.attr('method'),
+					async: false,									// execution is halted until ajax call is finished
+					url: frm.attr('action'),
+					data: frm.serialize(),
+					success: function (data) {alert(data);}
+				});
+				location.replace('?' + Math.random() +'#'+ frm.attr('id'));		// refresh page returning to current section (random avoid caching)
+			}
+		});
+		
+			
+		$('.orderform').submit(function (e) {
+			e.preventDefault();
+			var frm = $(this);
+			$.ajax({
+				type: frm.attr('method'),
+				async: false,
+				url: frm.attr('action'),
+				data: frm.serialize(),
+				success: function (data) {alert(data);}
+			});
+			location.replace('?' + Math.random() +'#'+ frm.attr('id'));		// refresh page returning to current section (random avoid caching)
+		});
+	});
+	</script>
+	
+
+	<div class="sidenav">
+		<a href={% url 'gestione_ordini:index' %}>Torna alla lista</a>
+		{% if not change %}
+			<a href={% url 'gestione_ordini:edit' order.id %}>Modifica ordine</a>
+		{% endif %}
+		<a id='deletebutton' href={% url 'gestione_ordini:delete' order.id %}>Elimina ordine</a>
+		{% if editAdmin %}
+			<a id='cancelbutton' href={% url 'gestione_ordini:cancel' order.id %}>Annulla ordine</a>
+		{% endif %}
+		<a href={% url 'gestione_ordini:pdf' order.id %}>PDF</a>
+		<a id='follow' title='Attiva notifiche per ogni aggiornamento a questo ordine' href=''>Attiva notifiche</a>
+		<a id='unfollow' title='Disattiva notifiche per ogni aggiornamento a questo ordine' href=''>Disattiva notifiche</a>
+		<a title='Modifica in modalità amministratore' href={% url 'gestione_ordini:editAdmin' order.id%}>[Modifica admin]</a>
+			
+		<hr>
+		
+		{% for form in list_form %}
+			<a 
+			{% if form.closed %}
+				style="color:#B40404"
+			{% endif %}
+				href="#{{form.section}}">{{form.sec_short_label}}</a>
+		{%endfor%}
+	</div>
+	
+	<div class='module'>
+		<!-- <p style='margin:0px;'> PUT HERE BUTTONS</p> -->
+		<p style='font-size:25;margin-top:20px;margin-bottom:0px;'>{{ order }}</p>
+		<p style='font-size:20;margin-top:10px;'>Stato: {{ order.get_order_status_display }}</p>
+		{% if error_message %}<p id="error_message" style="color:red; font-weight:bold">{{ error_message }}</p>{% endif %}
+
+		<p> Proponente: <span style="font-weight:bold"> {{order.proponente.get_full_name}}</span></p>
+		<p> N. proposta: <span style="font-weight:bold"> {{order.id}}</span></p>
+		<p> ID richiesta motivata d'acquisto: <span style="font-weight:bold"> {{order.rich_acq_id}}</span></p>
+	</div>
+	{% for form in list_form %}
+		<div class="module" id='{{form.section}}' >	<!-- id is used as anchor tag -->
+			<form action=" #{{form.section}}" method="post" id="{{ form.section }}" class="form orderform {{form.attach}}">
+				{% csrf_token %}
+				<p style="font-weight:bold"> {{form.sec_label}} </p>	<!-- form label -->
+				{% if editAdmin %}
+					<p><a href={% url 'gestione_ordini:openSection' order_id=order.id section=form.section%}>Apri sezione</a></p>
+				{% endif %}
+				{% if form.links %}
+					<p> 
+						{% for link in form.links %}
+							{% if link.2 %}
+								<a class={{ link.2 }} data-url={{ link.1 }} href=''>{{ link.0 }}</a><br>
+							{% else %}
+								<a class='nwlink' data-url={{ link.1 }} href=''>{{ link.0 }}</a><br>
+							{% endif %}
+						{% endfor %}
+					</p>
+				{% endif %}
+				<br>
+				<div style="display: table;">								<!-- div container for table styling of form -->
+					{% for field in form %}
+						<div style="display: table-row;">
+							{% if not field.is_hidden %}
+								<div style="display: table-cell;" class='label'> {{ field.label_tag }} </div>
+							{% endif %}
+
+							{% if field.field.is_checkbox %}
+								<div> {{ field }} <label for="{{ field.auto_id }}"></label> </div>
+							{% else %}
+								<div style="display: table-cell;"> {{ field }} </div>
+							{% endif %}
+
+							{% if field.field.help_text %}
+								<p class="help">{{ field.field.help_text|safe }}</p>
+							{% endif %}
+						</div>
+					{% endfor %}
+				</div>
+				{% if form.notes %}		<!-- add notes after form -->
+				<p>
+					{% for note in form.notes %}
+						<span style="font-family:'Courier New',Courier,monospace; font-size:12px">{{ note|safe|spacify }}</span>
+					{% endfor %}
+				</p>
+				{% endif %}
+				{% if form.closed %}	<!-- add section closed label after form -->
+					<br><p style="color:red; font-weight:bold">SEZIONE CHIUSA DA: {{ form.closedby }} </p>
+				{% endif %}
+				
+				{% for file in order.file_set.all %}
+					{% if file.section == form.section %}
+						<p>ALLEGATO: <a href={{ file.file.url }}>{{ file.description }}</a> &nbsp;
+							{% if form.is_editable %}
+								<a class='deletefile' href={% url 'gestione_ordini:deletefile' order_id=order.id file_id=file.id %}#{{form.section}}> (Elimina file) </a>
+							{% endif %}
+						</p>
+					{% endif %}
+				{% endfor %}
+				{% if form.is_editable %}
+					{% if form.section %}	<!-- attachments -->
+						<p> <a class='addfile' href={% url 'gestione_ordini:addfile' order_id=order.id section=form.section %}> Aggiungi allegato </a></p>
+					{% endif %}
+					<p>
+						<input type="hidden" name="section" value="{{ form.section }}" />
+						<input type="hidden" name="sec_label" value="{{ form.sec_label }}" />
+						<input type="submit" value="Salva sezione" />	<!-- buttons -->
+						{% if form.last_section %}
+							<button class="close_section">Chiudi ordine</button>
+						{% else %}
+							<button class="close_section">Salva e invia sezione</button>
+						{% endif %}
+						{% if form.enable_reopen %}
+							<button class="reopen_section">Riapri sezione precedente</button>
+						{% endif %}
+					</p>
+				{% endif %}
+			</form>
+		</div>
+	{% endfor %}
+{% endblock %}

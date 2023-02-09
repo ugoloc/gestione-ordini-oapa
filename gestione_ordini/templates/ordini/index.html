@@ -1,0 +1,111 @@
+{% extends 'ordini/base.html' %}
+{% block content %}
+	{% include "ordini/search.html" %}
+	<p style='text-align:center; margin-top:30;'><a href="{% url 'gestione_ordini:new'%}" class='button' style="text-decoration: none !important;">Nuovo ordine</a></p>
+	{% if orders_list %}
+		<table id='orders_table' class='display compact'>
+			<thead>
+				<tr>
+					<th>n.prop.</th>
+					<th>Data proposta</th>
+					<th>ID</th>
+					<th>N.Det.</th>
+					<th>Proponente</th>
+					<th>RUP</th>
+					<th>CIG</th>
+					<th>Descrizione</th>
+					<th>Stima costo</th>
+					<th>Attesa</th>
+					<th>Stato</th>
+				</tr>
+			</thead>
+			<tbody class='clickable_row' >
+			{% for order in orders_list %}
+				<!-- <li><a href="{% url 'gestione_ordini:detail' order.id %}">{{ order.cod_forn }}, {{order.proponente}}</a></li> -->
+				<tr data-url="{% url 'gestione_ordini:detail' order.id %}">
+					<td>{{ order.id}}</td>
+					<td>{{ order.data_prop|date:"d/m/Y"}}</td>
+					<td>{{ order.rich_acq_id }}</td>
+					<td>{{ order.determ_n }}</td>
+					<td>{{ order.proponente.get_full_name }}</td>
+					<td>{{ order.RUP.profilo.full_name }}</td>
+					<td>{{ order.CIG }}</td>
+					{% if order.followed %}
+					<td style='background-color:orange;'>{{ order.descriz }}</td>
+					{% else %}
+					<td>{{ order.descriz }}</td>
+					{% endif %}
+					<td>{{ order.stima_costo }}</td>
+					<td>{{ order.attesa }}</td>
+					<td class='order_status'>{{ order.get_order_status_display }}</td>
+					<!--<td><span class='order_closed'>{{ order.order_closed }}</span></td>-->
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+	{% else %}
+		<p>Nessun ordine trovato.</p>
+	{% endif %}
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="/static/js/DataTables-1.10.2/media/css/jquery.dataTables.css">
+<!-- DataTables -->
+<script type="text/javascript" charset="utf8" src="/static/js/DataTables-1.10.2/media/js/jquery.dataTables.js"></script>
+<script type="text/javascript" charset="utf8" src="/static/js/DataTables-1.10.2/date-eu.js"></script>
+<script>
+
+	$(document).ready(function() {
+		$('td:contains("None")').text('-');
+	
+		var oTable = $('#orders_table').dataTable({
+			"pageLength": 25,
+			"searching": false,
+			"language": {"url": "/static/js/DataTables-1.10.2/Italian.json"},		//"//cdn.datatables.net/plug-ins/725b2a2115b/i18n/Italian.json"},
+			dom: 'Rlfrtip',
+			stateSave: true,
+			columnDefs: [
+					{ type: 'date-eu', targets: 1 }
+				],
+			 "fnInitComplete": function(oSettings, json) {
+				oTable.fnSort( [ [1,'desc'] ] );
+			 }
+		});
+		
+		$('.clickable_row tr').bind('click', function(e){
+			e.preventDefault();
+			window.location = $(this).data('url');
+		});
+		
+		
+		$('.order_closed').each(function(){
+			if ($(this).html() == 'True') {
+				$(this).html('X');
+			} else {
+				$(this).html('');
+			}
+		});
+		
+		$('.order_status').each(function() {
+			var color = '';
+			switch($(this).text()){
+				case "Aperto":
+					color = 'Red';
+				break;
+				case "Inviato":
+					color = 'Lime';
+				break;
+				case "Ricevuto":
+					color = 'Orange';
+				break;
+				case "Chiuso":
+					color = '';
+				break;
+				case "Annullato":
+					color = '';
+				break;
+			}
+			$(this).css('background-color',color);
+		});
+	});
+</script>
+{% endblock %}

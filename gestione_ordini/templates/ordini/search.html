@@ -1,0 +1,86 @@
+<div>
+{{last_search.post_field}}
+	<form id='searchform' action='{% url 'gestione_ordini:search' %}' method='POST'>
+		{% csrf_token %}
+		<div style="display:inline;" class="input_fields_wrap"></div>
+		<input type='submit' value='Cerca' />
+		<button type="button" class='addsearch'>Aggiungi</button>
+		<input type="checkbox" name="filter_mine" value="true">Miei ordini
+		<input type="checkbox" name="filter_includeClosed" value="true">Includi ordini chiusi
+		<input type="checkbox" name="filter_followed" value="true">Ordini seguiti
+		<input type="hidden" name="fields_number" value="1">
+		&nbsp;<a href = {% url 'gestione_ordini:index' %} >Azzera ricerca</a>
+	</form>
+</div>
+
+<script>
+var x = 1; //initial text box count
+var max_fields      = 5; //maximum input boxes allowed
+var wrapper         = $(".input_fields_wrap"); //Fields wrapper
+var search_fields;
+	
+$(document).ready(function() {
+	var add_button      = $(".addsearch"); //Add button ID
+	
+	search_fields = '\
+		<div>\
+			<input name="value" type="text" />\
+			<select name="field">\
+				<option value="id">n. proposta</option>\
+				<option value="attesa">Attesa</option>\
+				<option value="proponente__profilo__full_name">Proponente</option>\
+				<option value="resp_ufficio__profilo__full_name">Responsabile Ufficio</option>\
+				<option value="descriz">Descrizione</option>\
+				<option value="RUP__profilo__full_name">RUP</option>\
+				<option value="contraente">Contraente</option>\
+				<option value="data_prop">Data proposta</option>\
+				<option value="rich_acq_id">ID richiesta acquisto</option>\
+				<option value="CIG">CIG</option>\
+				<option value="id_mepa">Codice MEPA</option>\
+				<option value="determ_n">N. determina</option>\
+			</select>\
+			<button class="remove_field" type="button">Rimuovi</button>\
+		</div>';
+	
+	$(wrapper).prepend(search_fields);			// populate first search row
+	$(wrapper).find('div').css("display","inline");			// buttons an fields on the same line
+	$('.remove_field').remove();				// remove the remove_field button from the first search row
+
+	
+	$(add_button).click(function(e){ //on add input button click
+		e.preventDefault();
+		addField();
+	});
+
+	$(wrapper).on("click",".remove_field", function(e){ //user click on remove text
+		e.preventDefault(); $(this).parent('div').remove(); 
+		x--;
+		$("input[name='fields_number']").val(x);
+	})
+
+	{% if last_search %}
+		var field_names = {{ last_search.field_names|safe }};
+		var field_values = {{ last_search.field_values|safe }};
+		var fields_number = {{last_search.fields_number }};
+		for (i = 1; i < fields_number; i++){
+			addField();
+		}
+		{% for i in last_search.range %}
+			$("select[name='field']").eq({{i}}).val(field_names[{{i}}]);
+			$("input[name='value']").eq({{i}}).val(field_values[{{i}}]);
+		{% endfor %}
+		$("input:checkbox[name='filter_mine']").prop('checked', {{ last_search.mine }});
+		$("input:checkbox[name='filter_followed']").prop('checked', {{ last_search.followed }});
+		$("input:checkbox[name='filter_includeClosed']").prop('checked', {{ last_search.open }});
+	{% endif %}
+});
+
+function addField(){
+	if(x < max_fields){ //max input box allowed
+			x++; //text box increment
+			//$(wrapper).append('<div><input type="text" name="mytext[]"/><a href="#" //class="remove_field">Remove</a></div>'); //add input box
+			$(wrapper).prepend(search_fields);
+	}
+	$("input[name='fields_number']").val(x);
+}
+</script>

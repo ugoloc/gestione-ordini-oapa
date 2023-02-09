@@ -1,0 +1,57 @@
+{% extends 'ordini/base.html' %}
+{% block content %}
+	{% if funds_list %}
+		<table id='funds_table' class='display compact'>
+			<thead>
+				<tr>
+					{% for col in head %}
+						<th>{{ col }}</th>
+					{% endfor%}
+				</tr>
+			</thead>
+			<tbody class='clickable_row' >
+			{% for fund in funds_list %}
+				<tr data-url="?key={{ fund.0 }}">
+					{% for element in fund %}
+						<td>{{ element }}</td>
+					{% endfor%}
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+	{% else %}
+		<p>Lista fondi non accessibile.</p>
+	{% endif %}
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="/static/js/DataTables-1.10.2/media/css/jquery.dataTables.css">
+<!-- DataTables -->
+<script type="text/javascript" charset="utf8" src="/static/js/DataTables-1.10.2/media/js/jquery.dataTables.js"></script>
+<script type="text/javascript" charset="utf8" src="/static/js/DataTables-1.10.2/date-eu.js"></script>
+<script>
+
+	$(document).ready(function() {
+		$('td:contains("None")').text('-');
+	
+		var oTable = $('#funds_table').dataTable({
+			"pageLength": 50,
+			"searching": false,
+			"language": {"url": "/static/js/DataTables-1.10.2/Italian.json"},		//"//cdn.datatables.net/plug-ins/725b2a2115b/i18n/Italian.json"},
+			dom: 'Rlfrtip',
+			stateSave: true,
+			columnDefs: [
+					{ type: 'string', targets: 0 }
+				],
+			 "fnInitComplete": function(oSettings, json) {
+				oTable.fnSort( [ [0,'asc'] ] );
+			 }
+		});
+		
+		$('.clickable_row tr').bind('click', function(e){
+			e.preventDefault();
+			window.location = $(this).data('url');
+		});
+	});
+	
+</script>
+{% endblock %}
